@@ -14,7 +14,8 @@ import { setupInput } from "./input.js";
 import { updateHud, showGameOver, hideGameOver, onRestart } from "./ui.js";
 import { getHighScore, setHighScoreIfBetter } from "./storage.js";
 import { createLanesFromConfig } from "./obstacles.js";
-import { buildRoadConfig } from "./levels.js";
+import { createRiverLanesFromConfig } from "./river.js";
+import { buildRoadConfig, buildRiverConfig } from "./levels.js";
 
 const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext("2d");
@@ -29,6 +30,7 @@ const state = {
 
 const frog = new Frog();
 let lanes = createLanesFromConfig(buildRoadConfig(state.level));
+let riverLanes = createRiverLanesFromConfig(buildRiverConfig(state.level));
 
 const ZONE_COLORS = {
   start: "#274b2e",
@@ -112,6 +114,38 @@ function checkRoadCollision() {
   }
 }
 
+function checkRiverState(dt) {
+  if (!RIVER_ROWS.includes(frog.row)) return;
+
+  let support = null;
+  for (const lane of riverLanes) {
+    const s = lane.supportAt(frog.col, frog.row);
+    if (s) {
+      support = s;
+      break;
+    }
+  }
+
+  if (!support || support.safe === false) {
+    loseLife();
+    return;
+  }
+
+  frog.rideOffsetCells += support.dxPerSec * dt;
+  while (frog.rideOffsetCells >= 1) {
+    frog.col += 1;
+    frog.rideOffsetCells -= 1;
+  }
+  while (frog.rideOffsetCells <= -1) {
+    frog.col -= 1;
+    frog.rideOffsetCells += 1;
+  }
+
+  if (frog.col < 0 || frog.col > COLS - 1) {
+    loseLife();
+  }
+}
+
 function loseLife() {
   state.lives -= 1;
   updateHud({ lives: state.lives });
@@ -135,6 +169,7 @@ function resetGame() {
   state.gameOver = false;
   frog.reset();
   lanes = createLanesFromConfig(buildRoadConfig(state.level));
+  riverLanes = createRiverLanesFromConfig(buildRiverConfig(state.level));
   updateHud({ lives: state.lives, score: state.score, level: state.level });
   hideGameOver();
 }
@@ -145,12 +180,14 @@ function onDirection(dir) {
   if (moved) {
     handleGoalCheck();
     checkRoadCollision();
+    checkRiverState(0);
   }
 }
 
 function render() {
   drawBoard();
   for (const lane of lanes) lane.draw(ctx, state.cellSize);
+  for (const lane of riverLanes) lane.draw(ctx, state.cellSize);
   frog.draw(ctx, state.cellSize);
 }
 
@@ -179,7 +216,9 @@ function init() {
 
     if (!state.gameOver) {
       for (const lane of lanes) lane.update(dt);
+      for (const lane of riverLanes) lane.update(dt);
       checkRoadCollision();
+      checkRiverState(dt);
     }
 
     render();

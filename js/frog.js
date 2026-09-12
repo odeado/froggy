@@ -9,6 +9,7 @@ export class Frog {
     this.col = START_COL;
     this.row = START_ROW;
     this.facing = "up";
+    this.rideOffsetCells = 0;
   }
 
   // dir: "up" | "down" | "left" | "right"
@@ -26,11 +27,12 @@ export class Frog {
     this.row = row;
     this.col = col;
     this.facing = dir;
+    this.rideOffsetCells = 0;
     return true;
   }
 
   draw(ctx, cellSize) {
-    const x = this.col * cellSize;
+    const x = (this.col + this.rideOffsetCells) * cellSize;
     const y = this.row * cellSize;
     const pad = cellSize * 0.15;
 

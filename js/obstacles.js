@@ -24,11 +24,14 @@ export class Lane {
     const spacing = this.lengthCells + this.gapCells;
     const count = Math.ceil(COLS / spacing) + 1;
     this.trackLength = count * spacing;
+    // Fase inicial aleatoria: evita que todos los carriles nazcan siempre
+    // alineados de la misma forma respecto a la columna de salida.
+    const phaseOffset = Math.random() * spacing;
     const vehicles = [];
     for (let i = 0; i < count; i++) {
       vehicles.push(
         new Vehicle({
-          xCells: i * spacing,
+          xCells: i * spacing + phaseOffset,
           lengthCells: this.lengthCells,
           color: this.color,
         })
