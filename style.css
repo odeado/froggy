@@ -93,3 +93,47 @@ html, body {
     opacity: 0.85;
   }
 }
+
+#game-over {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+#game-over[hidden] {
+  display: none;
+}
+
+#game-over .panel {
+  background: #1a1f26;
+  border: 1px solid #2f3a45;
+  border-radius: 12px;
+  padding: 24px 32px;
+  text-align: center;
+  min-width: 220px;
+}
+
+#game-over h2 {
+  margin: 0 0 12px;
+  color: #e04b4b;
+}
+
+#game-over p {
+  margin: 6px 0;
+}
+
+#go-restart {
+  margin-top: 14px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background: #4ade4a;
+  color: #0b0f14;
+  font-weight: 700;
+  font-size: 15px;
+  touch-action: manipulation;
+}

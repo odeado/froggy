@@ -11,8 +11,10 @@ import {
 } from "./config.js";
 import { Frog } from "./frog.js";
 import { setupInput } from "./input.js";
-import { updateHud } from "./ui.js";
+import { updateHud, showGameOver, hideGameOver, onRestart } from "./ui.js";
 import { getHighScore, setHighScoreIfBetter } from "./storage.js";
+import { createLanesFromConfig } from "./obstacles.js";
+import { buildRoadConfig } from "./levels.js";
 
 const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext("2d");
@@ -22,9 +24,11 @@ const state = {
   score: 0,
   level: 1,
   cellSize: 40,
+  gameOver: false,
 };
 
 const frog = new Frog();
+let lanes = createLanesFromConfig(buildRoadConfig(state.level));
 
 const ZONE_COLORS = {
   start: "#274b2e",
@@ -99,16 +103,54 @@ function handleGoalCheck() {
   }
 }
 
+function checkRoadCollision() {
+  for (const lane of lanes) {
+    if (lane.collidesWithCell(frog.col, frog.row)) {
+      loseLife();
+      return;
+    }
+  }
+}
+
+function loseLife() {
+  state.lives -= 1;
+  updateHud({ lives: state.lives });
+  if (state.lives <= 0) {
+    triggerGameOver();
+  } else {
+    frog.reset();
+  }
+}
+
+function triggerGameOver() {
+  state.gameOver = true;
+  const best = getHighScore();
+  showGameOver(state.score, best);
+}
+
+function resetGame() {
+  state.lives = INITIAL_LIVES;
+  state.score = 0;
+  state.level = 1;
+  state.gameOver = false;
+  frog.reset();
+  lanes = createLanesFromConfig(buildRoadConfig(state.level));
+  updateHud({ lives: state.lives, score: state.score, level: state.level });
+  hideGameOver();
+}
+
 function onDirection(dir) {
+  if (state.gameOver) return;
   const moved = frog.move(dir);
   if (moved) {
     handleGoalCheck();
-    render();
+    checkRoadCollision();
   }
 }
 
 function render() {
   drawBoard();
+  for (const lane of lanes) lane.draw(ctx, state.cellSize);
   frog.draw(ctx, state.cellSize);
 }
 
@@ -127,12 +169,24 @@ function init() {
 
   updateHud({ lives: state.lives, score: state.score, level: state.level });
   setupInput(onDirection);
-  render();
+  onRestart(resetGame);
 
-  // Loop de animación reservado para futuras fases (autos, troncos, timer).
-  requestAnimationFrame(function loop() {
+  let lastTime = performance.now();
+
+  function loop(now) {
+    const dt = Math.min((now - lastTime) / 1000, 0.05);
+    lastTime = now;
+
+    if (!state.gameOver) {
+      for (const lane of lanes) lane.update(dt);
+      checkRoadCollision();
+    }
+
+    render();
     requestAnimationFrame(loop);
-  });
+  }
+
+  requestAnimationFrame(loop);
 }
 
 init();
