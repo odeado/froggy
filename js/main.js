@@ -19,6 +19,7 @@ import { createRiverLanesFromConfig } from "./river.js";
 import { buildRoadConfig, buildRiverConfig } from "./levels.js";
 import { audio } from "./audio.js";
 import { effects } from "./particles.js";
+import { getTheme, drawThemeDecoration } from "./themes.js";
 
 const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext("2d");
@@ -56,17 +57,18 @@ let waterAnimOffset = 0;
 function drawBoard(dt) {
   const { cellSize } = state;
   waterAnimOffset += dt * 20;
+  const theme = getTheme(state.level);
 
   for (let row = 0; row < ROWS; row++) {
     const y = row * cellSize;
 
     if (row === START_ROW || row === MEDIAN_ROW) {
       // Zona de césped segura con patrón de textura
-      ctx.fillStyle = row === START_ROW ? "#224727" : "#284f2e";
+      ctx.fillStyle = row === START_ROW ? theme.grassStart : theme.grassMedian;
       ctx.fillRect(0, y, COLS * cellSize, cellSize);
 
       // Pequeñas briznas de hierba decorativas
-      ctx.fillStyle = "#34663c";
+      ctx.fillStyle = theme.grassBlade;
       for (let c = 0; c < COLS; c++) {
         const cx = c * cellSize;
         ctx.fillRect(cx + 6, y + 8, 3, 6);
@@ -74,11 +76,11 @@ function drawBoard(dt) {
       }
     } else if (ROAD_ROWS.includes(row)) {
       // Asfalto
-      ctx.fillStyle = "#1e2228";
+      ctx.fillStyle = theme.road;
       ctx.fillRect(0, y, COLS * cellSize, cellSize);
 
       // Líneas divisorias de carril (punteadas amarillas/blancas)
-      ctx.strokeStyle = "rgba(240, 220, 100, 0.25)";
+      ctx.strokeStyle = theme.laneDivider;
       ctx.lineWidth = 2;
       ctx.setLineDash([8, 8]);
       ctx.beginPath();
@@ -88,11 +90,11 @@ function drawBoard(dt) {
       ctx.setLineDash([]);
     } else if (RIVER_ROWS.includes(row) || row === GOAL_ROW) {
       // Agua del río animada
-      ctx.fillStyle = "#113854";
+      ctx.fillStyle = theme.water;
       ctx.fillRect(0, y, COLS * cellSize, cellSize);
 
       // Ondas de agua celestes flotantes
-      ctx.strokeStyle = "rgba(120, 210, 255, 0.15)";
+      ctx.strokeStyle = theme.waterWave;
       ctx.lineWidth = 1.5;
       for (let c = 0; c < COLS + 1; c++) {
         const waveX = (c * cellSize + (waterAnimOffset % cellSize)) % (COLS * cellSize);
@@ -102,6 +104,10 @@ function drawBoard(dt) {
       }
     }
   }
+
+  // Decoración ambiental propia del tema (estrellas de noche, resplandor de
+  // atardecer) — se dibuja detrás de las metas, carriles y la rana.
+  drawThemeDecoration(ctx, theme, cellSize, COLS, RIVER_ROWS.length + 1, waterAnimOffset / 20);
 
   // Dibujar casilleros de meta (5 lily pads)
   for (let i = 0; i < GOAL_COLS.length; i++) {
@@ -320,6 +326,15 @@ function init() {
       render(0);
     }, 100);
   });
+  // La barra de direcciones de Chrome/Safari en celular aparece y desaparece
+  // al hacer scroll, cambiando el alto real disponible sin disparar siempre
+  // "resize". visualViewport sí lo detecta de forma confiable.
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", () => {
+      resizeCanvas();
+      render(0);
+    });
+  }
 
   updateHud({ lives: state.lives, score: state.score, level: state.level });
   updateTimerBar(state.timer, TURN_SECONDS);

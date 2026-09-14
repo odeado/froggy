@@ -20,7 +20,8 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   gap: 6px;
 }
@@ -123,17 +124,24 @@ html, body {
   max-height: 100%;
 }
 
-/* D-Pad táctil */
+/* D-Pad táctil: flechas izquierda/derecha en los bordes (más fácil de
+   alcanzar con los pulgares), arriba/abajo agrupadas al centro. */
 #dpad {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 520px;
+  flex: 0 0 auto;
+  padding: 6px 14px calc(10px + env(safe-area-inset-bottom)) 14px;
+  gap: 8px;
+}
+
+.dpad-center {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 6px 0 14px;
-}
-
-.dpad-row {
-  display: flex;
   gap: 6px;
 }
 
@@ -152,6 +160,12 @@ html, body {
   touch-action: manipulation;
   cursor: pointer;
   transition: transform 0.08s ease, background 0.1s;
+  flex-shrink: 0;
+}
+
+.dpad-btn.dpad-side {
+  width: 66px;
+  height: 66px;
 }
 
 .dpad-btn:active {
