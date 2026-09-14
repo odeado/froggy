@@ -3,21 +3,29 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <title>Froggy</title>
+  <title>Froggy Arcade</title>
   <link rel="icon" href="data:," />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="game-wrap">
     <header id="hud">
-      <div class="hud-item">Vidas: <span id="hud-lives">3</span></div>
-      <div class="hud-item">Puntaje: <span id="hud-score">0</span></div>
-      <div class="hud-item">Nivel: <span id="hud-level">1</span></div>
+      <div class="hud-group">
+        <div class="hud-item" title="Vidas"><span class="icon">❤️</span> <span id="hud-lives">3</span></div>
+        <div class="hud-item" title="Nivel"><span class="icon">⚡</span> Nivel <span id="hud-level">1</span></div>
+      </div>
+      <div class="hud-group">
+        <div class="hud-item" title="Puntaje"><span class="icon">🏆</span> <span id="hud-score">0</span></div>
+        <button id="btn-mute" class="hud-btn" title="Silenciar / Activar sonido">🔊</button>
+      </div>
     </header>
+
+    <div id="timer-wrap">
+      <div id="timer-bar"></div>
+    </div>
 
     <div id="canvas-wrap">
       <canvas id="game-canvas"></canvas>
-      <div id="death-toast" hidden></div>
     </div>
 
     <div id="dpad" aria-hidden="false">
@@ -32,10 +40,20 @@
 
   <div id="game-over" hidden>
     <div class="panel">
-      <h2>Game Over</h2>
-      <p>Puntaje: <span id="go-score">0</span></p>
-      <p>Mejor puntaje: <span id="go-best">0</span></p>
-      <button id="go-restart">Reintentar</button>
+      <div class="panel-badge">🎮 GAME OVER</div>
+      <h2 id="go-title">¡Fin del Juego!</h2>
+      <div class="score-card">
+        <div class="score-item">
+          <span class="label">PUNTUAJE</span>
+          <span class="val" id="go-score">0</span>
+        </div>
+        <div class="score-divider"></div>
+        <div class="score-item">
+          <span class="label">RÉCORD</span>
+          <span class="val highlight" id="go-best">0</span>
+        </div>
+      </div>
+      <button id="go-restart">🔄 JUGAR DE NUEVO</button>
     </div>
   </div>
 

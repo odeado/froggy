@@ -7,7 +7,7 @@ html, body {
   margin: 0;
   padding: 0;
   height: 100%;
-  background: #0b0f14;
+  background: #090d12;
   color: #eef2f5;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   overscroll-behavior: none;
@@ -22,72 +22,114 @@ html, body {
   justify-content: flex-start;
   min-height: 100dvh;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-  gap: 8px;
+  gap: 6px;
 }
 
+/* HUD Superior Estilo Arcade */
 #hud {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   width: 100%;
-  max-width: 480px;
-  padding: 8px 12px;
-  font-size: 14px;
-  font-weight: 600;
+  max-width: 520px;
+  padding: 10px 16px;
+  background: rgba(22, 29, 39, 0.85);
+  border-bottom: 2px solid #233142;
+  border-radius: 0 0 12px 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+}
+
+.hud-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.hud-item {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hud-item span.icon {
+  font-size: 16px;
 }
 
 .hud-item span {
-  color: #7be07b;
+  color: #55f055;
+  font-family: monospace, monospace;
+  font-size: 17px;
 }
 
+.hud-btn {
+  background: #1e2936;
+  border: 1px solid #334459;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 16px;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.hud-btn:active {
+  transform: scale(0.92);
+  background: #2a3b4e;
+}
+
+/* Barra de Tiempo */
+#timer-wrap {
+  width: 100%;
+  max-width: 520px;
+  height: 6px;
+  background: #141c26;
+  border-radius: 3px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+#timer-bar {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #4ade4a, #a2f542);
+  transition: width 0.1s linear, background-color 0.3s ease;
+  border-radius: 3px;
+}
+
+#timer-bar.warning {
+  background: linear-gradient(90deg, #f59e0b, #ef4444);
+}
+
+/* Canvas del juego */
 #canvas-wrap {
-  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
   width: 100%;
   flex: 1 1 auto;
-}
-
-#death-toast {
-  position: absolute;
-  top: 12%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(224, 75, 75, 0.92);
-  color: #fff;
-  font-weight: 700;
-  font-size: 16px;
-  padding: 8px 16px;
-  border-radius: 8px;
-  pointer-events: none;
-  z-index: 5;
-  opacity: 0;
-  transition: opacity 0.15s ease;
-}
-
-#death-toast[hidden] {
-  display: none;
-}
-
-#death-toast.show {
-  opacity: 1;
+  padding: 4px;
 }
 
 #game-canvas {
-  background: #1a1a1a;
-  border-radius: 6px;
-  box-shadow: 0 0 0 2px #2a2a2a;
+  background: #0d1218;
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.8), 0 0 0 2px #1f2b3a;
   touch-action: none;
   max-width: 100%;
   max-height: 100%;
 }
 
+/* D-Pad táctil */
 #dpad {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  padding: 6px 0 16px;
+  padding: 6px 0 14px;
 }
 
 .dpad-row {
@@ -96,38 +138,50 @@ html, body {
 }
 
 .dpad-btn {
-  width: 56px;
-  height: 56px;
-  border-radius: 10px;
-  border: none;
-  background: #26313d;
+  width: 58px;
+  height: 58px;
+  border-radius: 12px;
+  border: 1px solid #2d3b4e;
+  background: linear-gradient(145deg, #1c2633, #161e29);
   color: #eef2f5;
-  font-size: 20px;
+  font-size: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
   touch-action: manipulation;
+  cursor: pointer;
+  transition: transform 0.08s ease, background 0.1s;
 }
 
 .dpad-btn:active {
-  background: #3a4a5c;
+  transform: translateY(2px) scale(0.94);
+  background: #34465d;
+  border-color: #4ade4a;
 }
 
-/* En pantallas grandes con mouse, el D-pad es opcional (igual sirve con click) */
 @media (min-width: 900px) and (pointer: fine) {
   #dpad {
-    opacity: 0.85;
+    opacity: 0.9;
   }
 }
 
+/* Overlay Game Over */
 #game-over {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(5, 8, 12, 0.82);
+  backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10;
+  z-index: 100;
+  animation: fadeIn 0.25s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 #game-over[hidden] {
@@ -135,31 +189,90 @@ html, body {
 }
 
 #game-over .panel {
-  background: #1a1f26;
-  border: 1px solid #2f3a45;
-  border-radius: 12px;
-  padding: 24px 32px;
+  background: linear-gradient(180deg, #182230 0%, #101721 100%);
+  border: 2px solid #2a3a4e;
+  border-radius: 18px;
+  padding: 28px 36px;
   text-align: center;
-  min-width: 220px;
+  min-width: 280px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+}
+
+.panel-badge {
+  font-size: 12px;
+  font-weight: 800;
+  color: #f87171;
+  letter-spacing: 2px;
+  margin-bottom: 4px;
 }
 
 #game-over h2 {
-  margin: 0 0 12px;
-  color: #e04b4b;
+  margin: 0 0 18px;
+  color: #ffffff;
+  font-size: 26px;
 }
 
-#game-over p {
-  margin: 6px 0;
+.score-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid #253344;
+  border-radius: 12px;
+  padding: 14px 10px;
+  margin-bottom: 22px;
+}
+
+.score-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.score-item .label {
+  font-size: 11px;
+  color: #8b9bb4;
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+
+.score-item .val {
+  font-size: 24px;
+  font-weight: 800;
+  font-family: monospace;
+  color: #ffffff;
+}
+
+.score-item .val.highlight {
+  color: #fbbf24;
+}
+
+.score-divider {
+  width: 1px;
+  height: 36px;
+  background: #253344;
 }
 
 #go-restart {
-  margin-top: 14px;
-  padding: 10px 20px;
+  width: 100%;
+  padding: 12px 24px;
   border: none;
-  border-radius: 8px;
-  background: #4ade4a;
-  color: #0b0f14;
-  font-weight: 700;
-  font-size: 15px;
-  touch-action: manipulation;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #4ade4a, #22c55e);
+  color: #081108;
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(74, 222, 74, 0.35);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+#go-restart:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(74, 222, 74, 0.5);
+}
+
+#go-restart:active {
+  transform: translateY(1px);
 }
