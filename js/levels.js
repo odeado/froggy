@@ -15,7 +15,9 @@ const CROC_HEAD_COLOR = "#1c4a1c";
 // hasta el más rápido justo antes del camellón. Niveles futuros (Fase 6)
 // subirán speedMultiplier y bajarán los gaps para aumentar la dificultad.
 export function buildRoadConfig(levelNumber) {
-  const speedMultiplier = 1 + (levelNumber - 1) * 0.15;
+  // Nivel 1 bien pausado a propósito (feedback: "siento que se muere solo") —
+  // sube gradualmente con cada nivel (Fase 6 conecta esto al conteo de nivel).
+  const speedMultiplier = 1 + (levelNumber - 1) * 0.18;
   const n = ROAD_ROWS.length;
 
   return ROAD_ROWS.map((row, i) => {
@@ -24,9 +26,9 @@ export function buildRoadConfig(levelNumber) {
     return {
       row,
       direction: i % 2 === 0 ? 1 : -1,
-      speedCellsPerSec: (1.0 + difficulty * 0.3) * speedMultiplier,
+      speedCellsPerSec: (0.7 + difficulty * 0.2) * speedMultiplier,
       lengthCells: isTruck ? 2 : 1,
-      gapCells: isTruck ? 3.5 : 3,
+      gapCells: isTruck ? 4 : 3.5,
       color: isTruck ? TRUCK_COLOR : CAR_COLORS[i % CAR_COLORS.length],
     };
   });
@@ -38,7 +40,7 @@ export function buildRoadConfig(levelNumber) {
 // así que el primer carril que cruza es el ÚLTIMO de RIVER_ROWS; ese debe
 // ser el más lento, subiendo en dificultad hacia la fila de metas.
 export function buildRiverConfig(levelNumber) {
-  const speedMultiplier = 1 + (levelNumber - 1) * 0.12;
+  const speedMultiplier = 1 + (levelNumber - 1) * 0.15;
   const kinds = ["log", "log", "croc", "log", "log"];
   const n = RIVER_ROWS.length;
 
@@ -49,9 +51,9 @@ export function buildRiverConfig(levelNumber) {
     return {
       row,
       direction: i % 2 === 0 ? -1 : 1,
-      speedCellsPerSec: (0.8 + difficulty * 0.25) * speedMultiplier,
+      speedCellsPerSec: (0.55 + difficulty * 0.15) * speedMultiplier,
       lengthCells: isCroc ? 2 : i % 2 === 0 ? 3 : 2,
-      gapCells: 2,
+      gapCells: 2.3,
       kind,
       color: isCroc ? CROC_COLOR : LOG_COLOR,
       headColor: isCroc ? CROC_HEAD_COLOR : undefined,
