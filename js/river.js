@@ -1,5 +1,12 @@
 import { COLS } from "./config.js";
 
+// Ciclo de las tortugas: cuánto tiempo están a flote (pisables) antes de
+// sumergirse, cuánto dura sumergidas (no pisables), y cuánto dura el aviso
+// parpadeante justo antes de que se sumerjan.
+const TURTLE_VISIBLE_SEC = 4.2;
+const TURTLE_SUBMERGE_SEC = 1.3;
+const TURTLE_WARN_SEC = 0.7;
+
 export class Platform {
   constructor({ xCells, lengthCells, kind, color, headColor }) {
     this.xCells = xCells;
@@ -21,7 +28,17 @@ export class RiverLane {
     this.color = color;
     this.headColor = headColor;
     this.trackLength = 0;
+    this.cycleTime = 0;
     this.platforms = this._build();
+  }
+
+  // Estado actual del ciclo de sumergido, solo aplica a carriles de tortugas.
+  _turtleState() {
+    const total = TURTLE_VISIBLE_SEC + TURTLE_SUBMERGE_SEC;
+    const t = this.cycleTime % total;
+    const submerged = t >= TURTLE_VISIBLE_SEC;
+    const warning = !submerged && t >= TURTLE_VISIBLE_SEC - TURTLE_WARN_SEC;
+    return { submerged, warning };
   }
 
   _build() {
@@ -52,6 +69,9 @@ export class RiverLane {
       } else if (this.direction < 0 && p.xCells + p.lengthCells < 0) {
         p.xCells += this.trackLength;
       }
+    }
+    if (this.kind === "turtle") {
+      this.cycleTime += dt;
     }
   }
 
@@ -147,6 +167,61 @@ export class RiverLane {
         ctx.arc(eyeX, eyeY, 1.8, 0, Math.PI * 2);
         ctx.arc(eyeX, y + h * 0.7, 1.8, 0, Math.PI * 2);
         ctx.fill();
+      } else if (this.kind === "turtle") {
+        const { submerged, warning } = this._turtleState();
+
+        if (submerged) {
+          // Bajo el agua: solo una ondita sutil marca dónde están
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(x + w / 2, y + h / 2, h * 0.32, 0, Math.PI * 2);
+          ctx.stroke();
+        } else {
+          if (warning) {
+            // Parpadeo de aviso justo antes de sumergirse
+            ctx.globalAlpha = 0.45 + 0.4 * Math.abs(Math.sin(performance.now() / 90));
+          }
+
+          const turtleCount = Math.max(1, Math.round(p.lengthCells));
+          for (let t = 0; t < turtleCount; t++) {
+            const tx = x + (t + 0.5) * (w / turtleCount);
+            const ty = y + h / 2;
+            const rr = h * 0.4;
+
+            // Caparazón
+            ctx.fillStyle = "#3d7a3d";
+            ctx.beginPath();
+            ctx.ellipse(tx, ty, rr, rr * 0.82, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Patrón del caparazón
+            ctx.strokeStyle = "#255025";
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(tx - rr * 0.55, ty - rr * 0.28);
+            ctx.lineTo(tx + rr * 0.55, ty - rr * 0.28);
+            ctx.moveTo(tx - rr * 0.55, ty + rr * 0.28);
+            ctx.lineTo(tx + rr * 0.55, ty + rr * 0.28);
+            ctx.moveTo(tx, ty - rr * 0.6);
+            ctx.lineTo(tx, ty + rr * 0.6);
+            ctx.stroke();
+
+            // Borde claro del caparazón
+            ctx.strokeStyle = "#5aa85a";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.ellipse(tx, ty, rr, rr * 0.82, 0, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Cabeza asomando hacia el sentido del movimiento
+            const headX = this.direction > 0 ? tx + rr * 0.85 : tx - rr * 0.85;
+            ctx.fillStyle = "#4a8a4a";
+            ctx.beginPath();
+            ctx.arc(headX, ty, rr * 0.26, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
       }
 
       ctx.restore();
@@ -155,6 +230,7 @@ export class RiverLane {
 
   supportAt(col, row) {
     if (row !== this.row) return null;
+    if (this.kind === "turtle" && this._turtleState().submerged) return null;
     for (const p of this.platforms) {
       const offsets = [0, -this.trackLength, this.trackLength];
       for (const offset of offsets) {

@@ -1,10 +1,8 @@
 import { ROAD_ROWS, RIVER_ROWS } from "./config.js";
+import { getTheme } from "./themes.js";
 
-const CAR_COLORS = ["#e04b4b", "#e0a64b", "#c94be0", "#e0d84b"];
-const TRUCK_COLOR = "#4b7be0";
 const LOG_COLOR = "#8a5a2b";
 const CROC_COLOR = "#2f6b2f";
-const CROC_HEAD_COLOR = "#1c4a1c";
 
 // Configuración de la carretera para un nivel dado.
 //
@@ -19,6 +17,7 @@ export function buildRoadConfig(levelNumber) {
   // sube gradualmente con cada nivel (Fase 6 conecta esto al conteo de nivel).
   const speedMultiplier = 1 + (levelNumber - 1) * 0.18;
   const n = ROAD_ROWS.length;
+  const theme = getTheme(levelNumber);
 
   return ROAD_ROWS.map((row, i) => {
     const difficulty = n - 1 - i; // 0 = carril más cercano a la salida (fácil)
@@ -29,7 +28,7 @@ export function buildRoadConfig(levelNumber) {
       speedCellsPerSec: (0.7 + difficulty * 0.2) * speedMultiplier,
       lengthCells: isTruck ? 2 : 1,
       gapCells: isTruck ? 4 : 3.5,
-      color: isTruck ? TRUCK_COLOR : CAR_COLORS[i % CAR_COLORS.length],
+      color: isTruck ? theme.truckColor : theme.carColors[i % theme.carColors.length],
     };
   });
 }
@@ -41,22 +40,30 @@ export function buildRoadConfig(levelNumber) {
 // ser el más lento, subiendo en dificultad hacia la fila de metas.
 export function buildRiverConfig(levelNumber) {
   const speedMultiplier = 1 + (levelNumber - 1) * 0.15;
-  const kinds = ["log", "log", "croc", "log", "log"];
+  // Nivel 1 se mantiene simple (solo troncos y cocodrilo, tal como se probó
+  // y aprobó). Desde el nivel 2 se mezclan tortugas que se sumergen, para
+  // variar la experiencia como en el arcade original.
+  const kinds =
+    levelNumber >= 2
+      ? ["log", "turtle", "croc", "log", "turtle"]
+      : ["log", "log", "croc", "log", "log"];
   const n = RIVER_ROWS.length;
+  const theme = getTheme(levelNumber);
 
   return RIVER_ROWS.map((row, i) => {
     const difficulty = n - 1 - i; // 0 = carril más cercano al camellón (fácil)
     const kind = kinds[i % kinds.length];
     const isCroc = kind === "croc";
+    const isTurtle = kind === "turtle";
     return {
       row,
       direction: i % 2 === 0 ? -1 : 1,
       speedCellsPerSec: (0.55 + difficulty * 0.15) * speedMultiplier,
-      lengthCells: isCroc ? 2 : i % 2 === 0 ? 3 : 2,
+      lengthCells: isCroc ? 2 : isTurtle ? 3 : i % 2 === 0 ? 3 : 2,
       gapCells: 2.3,
       kind,
       color: isCroc ? CROC_COLOR : LOG_COLOR,
-      headColor: isCroc ? CROC_HEAD_COLOR : undefined,
+      headColor: isCroc ? theme.crocHeadColor : undefined,
     };
   });
 }

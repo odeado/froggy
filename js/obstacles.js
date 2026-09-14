@@ -62,6 +62,12 @@ export class Lane {
 
       const isTruck = v.lengthCells >= 2;
 
+      // Sombra de contacto (da sensación de volumen respecto al asfalto)
+      ctx.fillStyle = "rgba(0, 0, 0, 0.22)";
+      ctx.beginPath();
+      ctx.ellipse(x + w / 2, y + h - 1, w * 0.42, h * 0.12, 0, 0, Math.PI * 2);
+      ctx.fill();
+
       // Faros y haces de luz delanteros
       const headlightW = cellSize * 0.4;
       const lightY1 = y + h * 0.15;
