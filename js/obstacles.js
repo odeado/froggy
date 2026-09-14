@@ -24,8 +24,6 @@ export class Lane {
     const spacing = this.lengthCells + this.gapCells;
     const count = Math.ceil(COLS / spacing) + 1;
     this.trackLength = count * spacing;
-    // Fase inicial aleatoria: evita que todos los carriles nazcan siempre
-    // alineados de la misma forma respecto a la columna de salida.
     const phaseOffset = Math.random() * spacing;
     const vehicles = [];
     for (let i = 0; i < count; i++) {
@@ -52,21 +50,104 @@ export class Lane {
   }
 
   draw(ctx, cellSize) {
-    const pad = cellSize * 0.1;
+    const padY = cellSize * 0.12;
+    const h = cellSize - padY * 2;
+
     for (const v of this.vehicles) {
       const x = v.xCells * cellSize;
-      const y = this.row * cellSize;
+      const y = this.row * cellSize + padY;
       const w = v.lengthCells * cellSize;
+
+      ctx.save();
+
+      const isTruck = v.lengthCells >= 2;
+
+      // Faros y haces de luz delanteros
+      const headlightW = cellSize * 0.4;
+      const lightY1 = y + h * 0.15;
+      const lightY2 = y + h * 0.85;
+
+      ctx.fillStyle = "rgba(255, 255, 190, 0.25)";
+      ctx.beginPath();
+      if (this.direction > 0) {
+        const frontX = x + w;
+        ctx.moveTo(frontX, lightY1);
+        ctx.lineTo(frontX + headlightW, lightY1 - 4);
+        ctx.lineTo(frontX + headlightW, lightY2 + 4);
+        ctx.lineTo(frontX, lightY2);
+      } else {
+        const frontX = x;
+        ctx.moveTo(frontX, lightY1);
+        ctx.lineTo(frontX - headlightW, lightY1 - 4);
+        ctx.lineTo(frontX - headlightW, lightY2 + 4);
+        ctx.lineTo(frontX, lightY2);
+      }
+      ctx.closePath();
+      ctx.fill();
+
+      // Carrocería del vehículo
       ctx.fillStyle = v.color;
-      ctx.fillRect(x + pad / 2, y + pad / 2, w - pad, cellSize - pad);
+      ctx.beginPath();
+      ctx.roundRect(x + 2, y, w - 4, h, 6);
+      ctx.fill();
+
+      // Sombra interior de la carrocería
+      ctx.fillStyle = "rgba(0,0,0,0.18)";
+      ctx.fillRect(x + 4, y + h * 0.7, w - 8, h * 0.25);
+
+      if (isTruck) {
+        // Cabina de camión
+        const cabW = cellSize * 0.7;
+        const cabX = this.direction > 0 ? x + w - cabW : x;
+        ctx.fillStyle = "rgba(0,0,0,0.25)";
+        ctx.fillRect(cabX, y + 2, cabW, h - 4);
+
+        // Parabrisas de camión
+        ctx.fillStyle = "#a8e4ff";
+        const windX = this.direction > 0 ? cabX + cabW * 0.3 : cabX + 4;
+        ctx.fillRect(windX, y + h * 0.2, cabW * 0.5, h * 0.6);
+      } else {
+        // Parabrisas y techo de automóvil
+        const roofW = w * 0.5;
+        const roofX = x + (w - roofW) / 2;
+
+        // Vidrio parabrisas delantero y trasero
+        ctx.fillStyle = "#8cd3ff";
+        ctx.beginPath();
+        ctx.roundRect(roofX - 3, y + h * 0.15, roofW + 6, h * 0.7, 4);
+        ctx.fill();
+
+        // Techo
+        ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+        ctx.beginPath();
+        ctx.roundRect(roofX, y + h * 0.2, roofW, h * 0.6, 3);
+        ctx.fill();
+      }
+
+      // Ruedas (4 esquinas)
+      ctx.fillStyle = "#111111";
+      const wheelW = Math.max(4, cellSize * 0.12);
+      const wheelH = Math.max(3, h * 0.22);
+      // Superior izquierda/derecha
+      ctx.fillRect(x + w * 0.15, y - 2, wheelW, wheelH);
+      ctx.fillRect(x + w * 0.75 - wheelW, y - 2, wheelW, wheelH);
+      // Inferior izquierda/derecha
+      ctx.fillRect(x + w * 0.15, y + h - wheelH + 2, wheelW, wheelH);
+      ctx.fillRect(x + w * 0.75 - wheelW, y + h - wheelH + 2, wheelW, wheelH);
+
+      // Luces traseras rojas
+      ctx.fillStyle = "#ff2222";
+      const tailX = this.direction > 0 ? x + 2 : x + w - 4;
+      ctx.fillRect(tailX, y + 3, 2, h * 0.25);
+      ctx.fillRect(tailX, y + h - 3 - h * 0.25, 2, h * 0.25);
+
+      ctx.restore();
     }
   }
 
-  // Colisión contra una celda de grilla (col, row) — usada para la rana.
   collidesWithCell(col, row) {
     if (row !== this.row) return false;
     for (const v of this.vehicles) {
-      // Se revisan copias desplazadas para cubrir el wraparound del carril.
       const offsets = [0, -this.trackLength, this.trackLength];
       for (const offset of offsets) {
         const start = v.xCells + offset;
