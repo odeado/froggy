@@ -1,7 +1,29 @@
 import { COLS, ROWS, START_COL, START_ROW } from "./config.js";
 
+// Paletas de color por "variante" de rana. "green" es la rana clásica de
+// siempre (jugador 1 / un jugador) — sus valores son EXACTAMENTE los que ya
+// existían, cero cambio visual. "blue" es la rana del segundo jugador en
+// modo en línea: mismo diseño y mismo detalle, solo con la gama de color
+// desplazada a azules, igual que hacen los temas por nivel con el resto del
+// tablero.
+const PALETTES = {
+  green: {
+    legs: "#3ab83a",
+    bodyStops: ["#6be66b", "#42c742", "#2ba62b"],
+    spots: "#228b22",
+    eyeBump: "#42c742",
+  },
+  blue: {
+    legs: "#3a8ab8",
+    bodyStops: ["#6bb8e6", "#4295c7", "#2b6ea6"],
+    spots: "#1f5f8b",
+    eyeBump: "#4295c7",
+  },
+};
+
 export class Frog {
-  constructor() {
+  constructor(variant = "green") {
+    this.variant = PALETTES[variant] ? variant : "green";
     this.reset();
   }
 
@@ -10,7 +32,7 @@ export class Frog {
     this.row = START_ROW;
     this.facing = "up";
     this.rideOffsetCells = 0;
-    
+
     // Posición animada e interpolación de salto
     this.animCol = START_COL;
     this.animRow = START_ROW;
@@ -38,6 +60,21 @@ export class Frog {
     return true;
   }
 
+  // Coloca la rana directamente en una celda (sin pasar por move()),
+  // disparando la misma animación de salto si la celda cambió. Se usa para
+  // la rana "fantasma" del rival en modo en línea, cuya posición llega por
+  // red en vez de por input local.
+  setPosition(col, row, facing) {
+    if (col === this.col && row === this.row) return;
+    this.animCol = this.col;
+    this.animRow = this.row;
+    this.col = col;
+    this.row = row;
+    if (facing) this.facing = facing;
+    this.rideOffsetCells = 0;
+    this.jumpProgress = 0;
+  }
+
   update(dt) {
     if (this.jumpProgress < 1) {
       this.jumpProgress += dt * 10; // Salto rápido y responsivo (100ms)
@@ -47,7 +84,10 @@ export class Frog {
     }
   }
 
-  draw(ctx, cellSize) {
+  draw(ctx, cellSize, opts = {}) {
+    const palette = PALETTES[this.variant];
+    const alpha = opts.alpha !== undefined ? opts.alpha : 1;
+
     // Interpolación de posición (de animCol/Row a col/row)
     const t = this.jumpProgress;
     const currentCol = this.animCol + (this.col - this.animCol) * t;
@@ -62,7 +102,8 @@ export class Frog {
     const y = baseY - jumpArc;
 
     ctx.save();
-    
+    if (alpha !== 1) ctx.globalAlpha = alpha;
+
     // Sombra en el suelo mientras salta
     if (jumpArc > 1) {
       ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
@@ -93,7 +134,7 @@ export class Frog {
     ctx.rotate(angle);
 
     // Patas traseras (ancas)
-    ctx.fillStyle = "#3ab83a";
+    ctx.fillStyle = palette.legs;
     ctx.beginPath();
     ctx.ellipse(-r * 0.6, r * 0.4, r * 0.35, r * 0.5, -0.4, 0, Math.PI * 2);
     ctx.ellipse(r * 0.6, r * 0.4, r * 0.35, r * 0.5, 0.4, 0, Math.PI * 2);
@@ -105,11 +146,11 @@ export class Frog {
     ctx.ellipse(r * 0.6, -r * 0.3, r * 0.2, r * 0.35, -0.3, 0, Math.PI * 2);
     ctx.fill();
 
-    // Cuerpo (óvalo verde vibrante)
+    // Cuerpo (óvalo vibrante)
     const bodyGradient = ctx.createRadialGradient(-r * 0.2, -r * 0.2, r * 0.1, 0, 0, r);
-    bodyGradient.addColorStop(0, "#6be66b");
-    bodyGradient.addColorStop(0.7, "#42c742");
-    bodyGradient.addColorStop(1, "#2ba62b");
+    bodyGradient.addColorStop(0, palette.bodyStops[0]);
+    bodyGradient.addColorStop(0.7, palette.bodyStops[1]);
+    bodyGradient.addColorStop(1, palette.bodyStops[2]);
 
     ctx.fillStyle = bodyGradient;
     ctx.beginPath();
@@ -117,7 +158,7 @@ export class Frog {
     ctx.fill();
 
     // Patrón/Manchas en la espalda
-    ctx.fillStyle = "#228b22";
+    ctx.fillStyle = palette.spots;
     ctx.beginPath();
     ctx.arc(0, r * 0.2, r * 0.18, 0, Math.PI * 2);
     ctx.arc(-r * 0.25, 0, r * 0.12, 0, Math.PI * 2);
@@ -125,7 +166,7 @@ export class Frog {
     ctx.fill();
 
     // Protuberancias de los ojos
-    ctx.fillStyle = "#42c742";
+    ctx.fillStyle = palette.eyeBump;
     ctx.beginPath();
     ctx.arc(-r * 0.42, -r * 0.65, r * 0.3, 0, Math.PI * 2);
     ctx.arc(r * 0.42, -r * 0.65, r * 0.3, 0, Math.PI * 2);

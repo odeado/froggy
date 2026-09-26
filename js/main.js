@@ -12,7 +12,15 @@ import {
 } from "./config.js";
 import { Frog } from "./frog.js";
 import { setupInput } from "./input.js";
-import { updateHud, updateTimerBar, showGameOver, hideGameOver, onRestart, setupAudioToggle } from "./ui.js";
+import {
+  updateHud,
+  updateTimerBar,
+  updateRivalGoals,
+  showGameOver,
+  hideGameOver,
+  onRestart,
+  setupAudioToggle,
+} from "./ui.js";
 import { getHighScore, setHighScoreIfBetter } from "./storage.js";
 import { createLanesFromConfig } from "./obstacles.js";
 import { createRiverLanesFromConfig } from "./river.js";
@@ -20,6 +28,7 @@ import { buildRoadConfig, buildRiverConfig } from "./levels.js";
 import { audio } from "./audio.js";
 import { effects } from "./particles.js";
 import { getTheme, drawThemeDecoration } from "./themes.js";
+import { createMultiplayerController } from "./multiplayer.js";
 
 const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext("2d");
@@ -32,9 +41,17 @@ const state = {
   gameOver: false,
   timer: TURN_SECONDS,
   goalsFilled: [false, false, false, false, false],
+  // Modo de partida: "single" (clásico) o "multi" (carrera en línea de a
+  // dos). started controla si el loop principal avanza el tiempo del juego
+  // o solo dibuja un tablero quieto detrás de las pantallas de menú.
+  mode: "single",
+  started: false,
+  matchOver: false,
+  opponent: null,
+  mp: null,
 };
 
-const frog = new Frog();
+const frog = new Frog("green");
 let lanes = createLanesFromConfig(buildRoadConfig(state.level));
 let riverLanes = createRiverLanesFromConfig(buildRiverConfig(state.level));
 
@@ -137,6 +154,73 @@ function drawBoard(dt) {
   }
 }
 
+function countGoalsFilled() {
+  return state.goalsFilled.filter(Boolean).length;
+}
+
+// Manda al rival la posición/estado actual de la rana local. Solo tiene
+// efecto en modo "multi" y mientras la carrera siga en curso.
+function sendLocalState(finished = false) {
+  if (state.mode !== "multi" || !state.mp || state.matchOver) return;
+  state.mp.sendState({
+    col: frog.col,
+    row: frog.row,
+    facing: frog.facing,
+    goalsFilledCount: countGoalsFilled(),
+    lives: state.lives,
+    finished,
+  });
+}
+
+// Termina una carrera en línea (por meta, por vidas o porque el rival
+// terminó primero) y muestra la pantalla de resultado correspondiente.
+function finishMultiplayerMatch(won, reason) {
+  if (state.matchOver) return;
+  state.matchOver = true;
+  state.gameOver = true;
+
+  if (won) {
+    audio.playLevelUp();
+    sendLocalState(true);
+    state.mp.declareResult({
+      won: true,
+      title: "¡Ganaste la carrera! 🏆",
+      detail: "Llenaste las 5 metas antes que tu rival.",
+    });
+  } else {
+    audio.playGameOver();
+    const detail =
+      reason === "opponent"
+        ? "Tu rival llenó las 5 metas primero."
+        : "Te quedaste sin vidas.";
+    state.mp.declareResult({ won: false, title: "Perdiste la carrera 🐸", detail });
+  }
+}
+
+function handleOpponentMessage(msg) {
+  if (state.matchOver) return;
+  if (msg.col !== undefined && state.opponent) {
+    state.opponent.setPosition(msg.col, msg.row, msg.facing);
+  }
+  if (msg.goalsFilledCount !== undefined) {
+    updateRivalGoals(msg.goalsFilledCount);
+  }
+  if (msg.finished) {
+    finishMultiplayerMatch(false, "opponent");
+  }
+}
+
+function handleOpponentDisconnected() {
+  if (state.matchOver) return;
+  state.matchOver = true;
+  state.gameOver = true;
+  state.mp.declareResult({
+    won: true,
+    title: "Tu rival se desconectó",
+    detail: "Puedes volver al menú y crear una sala nueva.",
+  });
+}
+
 function handleGoalCheck() {
   if (frog.row !== GOAL_ROW) return;
 
@@ -165,7 +249,11 @@ function handleGoalCheck() {
 
       // Comprobar si completó las 5 metas del nivel
       if (state.goalsFilled.every(Boolean)) {
-        handleLevelComplete();
+        if (state.mode === "multi") {
+          finishMultiplayerMatch(true);
+        } else {
+          handleLevelComplete();
+        }
       } else {
         frog.reset();
         state.timer = TURN_SECONDS;
@@ -254,7 +342,11 @@ function loseLife(cause = "road") {
   updateHud({ lives: state.lives });
 
   if (state.lives <= 0) {
-    triggerGameOver();
+    if (state.mode === "multi") {
+      finishMultiplayerMatch(false, "lives");
+    } else {
+      triggerGameOver();
+    }
   } else {
     frog.reset();
     state.timer = TURN_SECONDS;
@@ -268,6 +360,40 @@ function triggerGameOver() {
   showGameOver(state.score, best);
 }
 
+function onDirection(dir) {
+  if (state.gameOver) return;
+  const moved = frog.move(dir);
+  if (moved) {
+    audio.playJump();
+    handleGoalCheck();
+    checkRoadCollision();
+    checkRiverState(0);
+    sendLocalState(false);
+  }
+}
+
+function render(dt) {
+  ctx.save();
+
+  // Sacudida de pantalla en impactos
+  effects.applyShakeTransform(ctx);
+
+  drawBoard(dt);
+  for (const lane of lanes) lane.draw(ctx, state.cellSize);
+  for (const lane of riverLanes) lane.draw(ctx, state.cellSize);
+
+  if (state.mode === "multi" && state.opponent) {
+    state.opponent.draw(ctx, state.cellSize, { alpha: 0.85 });
+  }
+  frog.draw(ctx, state.cellSize);
+  effects.draw(ctx);
+
+  ctx.restore();
+}
+
+// Deja todo listo para arrancar una carrera desde cero: vidas, puntaje,
+// nivel 1, carriles nuevos y la rana en la salida. Se usa tanto para
+// "jugar de nuevo" en un jugador como para arrancar cada partida en línea.
 function resetGame() {
   state.lives = INITIAL_LIVES;
   state.score = 0;
@@ -287,31 +413,23 @@ function resetGame() {
   hideGameOver();
 }
 
-function onDirection(dir) {
-  if (state.gameOver) return;
-  const moved = frog.move(dir);
-  if (moved) {
-    audio.playJump();
-    handleGoalCheck();
-    checkRoadCollision();
-    checkRiverState(0);
+// Arranca una partida nueva: "single" (un jugador, comportamiento clásico
+// de siempre) o "multi" (carrera en línea contra el rival de la sala).
+function beginMatch(mode, mpController) {
+  state.mode = mode;
+  state.matchOver = false;
+  if (mode === "multi") {
+    state.mp = mpController;
+    state.opponent = new Frog("blue");
+    mpController.onOpponentMessage(handleOpponentMessage);
+    mpController.onOpponentDisconnected(handleOpponentDisconnected);
+    updateRivalGoals(0);
+  } else {
+    state.mp = null;
+    state.opponent = null;
   }
-}
-
-function render(dt) {
-  ctx.save();
-
-  // Sacudida de pantalla en impactos
-  effects.applyShakeTransform(ctx);
-
-  drawBoard(dt);
-  for (const lane of lanes) lane.draw(ctx, state.cellSize);
-  for (const lane of riverLanes) lane.draw(ctx, state.cellSize);
-
-  frog.draw(ctx, state.cellSize);
-  effects.draw(ctx);
-
-  ctx.restore();
+  resetGame();
+  state.started = true;
 }
 
 function init() {
@@ -342,13 +460,24 @@ function init() {
   onRestart(resetGame);
   setupAudioToggle(() => audio.toggleMute());
 
+  // Pantalla inicial: elegir un jugador o crear/unirse a una sala en línea.
+  // El tablero ya está dibujado detrás (quieto) mientras se decide el modo.
+  const mp = createMultiplayerController({
+    onSinglePlayer: () => beginMatch("single", null),
+    onMatchStart: () => beginMatch("multi", mp),
+  });
+
   let lastTime = performance.now();
 
   function loop(now) {
     const dt = Math.min((now - lastTime) / 1000, 0.05);
     lastTime = now;
 
-    if (!state.gameOver) {
+    if (state.opponent) {
+      state.opponent.update(dt);
+    }
+
+    if (state.started && !state.gameOver) {
       // Actualizar temporizador de turno
       state.timer -= dt;
       if (state.timer <= 0) {

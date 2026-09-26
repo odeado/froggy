@@ -1,6 +1,7 @@
 const livesEl = document.getElementById("hud-lives");
 const scoreEl = document.getElementById("hud-score");
 const levelEl = document.getElementById("hud-level");
+const rivalGoalsEl = document.getElementById("hud-rival-goals");
 
 const timerBarEl = document.getElementById("timer-bar");
 const btnMute = document.getElementById("btn-mute");
@@ -14,6 +15,10 @@ export function updateHud({ lives, score, level }) {
   if (lives !== undefined) livesEl.textContent = String(lives);
   if (score !== undefined) scoreEl.textContent = String(score);
   if (level !== undefined) levelEl.textContent = String(level);
+}
+
+export function updateRivalGoals(count) {
+  if (rivalGoalsEl) rivalGoalsEl.textContent = String(count);
 }
 
 export function updateTimerBar(remaining, total) {

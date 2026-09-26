@@ -18,6 +18,9 @@
         <div class="hud-item" title="Puntaje"><span class="icon">🏆</span> <span id="hud-score">0</span></div>
         <button id="btn-mute" class="hud-btn" title="Silenciar / Activar sonido">🔊</button>
       </div>
+      <div class="hud-group" id="hud-rival" hidden>
+        <div class="hud-item" title="Metas del rival"><span class="icon">🐸</span> <span id="hud-rival-goals">0</span>/5</div>
+      </div>
     </header>
 
     <div id="timer-wrap">
@@ -38,7 +41,7 @@
     </div>
   </div>
 
-  <div id="game-over" hidden>
+  <div id="game-over" class="overlay" hidden>
     <div class="panel">
       <div class="panel-badge">🎮 GAME OVER</div>
       <h2 id="go-title">¡Fin del Juego!</h2>
@@ -54,6 +57,60 @@
         </div>
       </div>
       <button id="go-restart">🔄 JUGAR DE NUEVO</button>
+    </div>
+  </div>
+
+  <!-- Selección de modo: un jugador o en línea -->
+  <div id="mode-select" class="overlay">
+    <div class="panel">
+      <div class="panel-badge">🐸 FROGGY ARCADE</div>
+      <h2>¿Cómo quieres jugar?</h2>
+      <div class="mode-buttons">
+        <button id="btn-mode-single" class="mode-btn">🎮 Un jugador</button>
+        <button id="btn-mode-online" class="mode-btn">🌐 En línea (Beta)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Crear o unirse a una sala en línea -->
+  <div id="online-menu" class="overlay" hidden>
+    <div class="panel">
+      <div class="panel-badge">🌐 EN LÍNEA</div>
+      <h2>Jugar con un amigo</h2>
+      <div class="mode-buttons">
+        <button id="btn-create-room" class="mode-btn">Crear sala</button>
+        <div class="join-row">
+          <input id="join-code-input" maxlength="4" placeholder="CÓDIGO" autocomplete="off" autocapitalize="characters" />
+          <button id="btn-join-room" class="mode-btn small">Unirse</button>
+        </div>
+      </div>
+      <button id="btn-online-back" class="link-btn">‹ Volver</button>
+    </div>
+  </div>
+
+  <!-- Esperando a que el rival se conecte -->
+  <div id="room-waiting" class="overlay" hidden>
+    <div class="panel">
+      <div class="panel-badge">🌐 SALA</div>
+      <h2 id="waiting-title">Esperando rival…</h2>
+      <div id="room-code-display" class="room-code" hidden></div>
+      <p id="waiting-status" class="waiting-status"></p>
+      <button id="btn-waiting-cancel" class="link-btn">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- Cuenta regresiva justo antes de arrancar la carrera -->
+  <div id="countdown-overlay" class="overlay" hidden>
+    <div id="countdown-number">3</div>
+  </div>
+
+  <!-- Resultado final de una partida en línea -->
+  <div id="match-result" class="overlay" hidden>
+    <div class="panel">
+      <div class="panel-badge" id="match-result-badge">🏆 VICTORIA</div>
+      <h2 id="match-result-title">¡Ganaste la carrera!</h2>
+      <p id="match-result-detail" class="waiting-status"></p>
+      <button id="btn-match-menu" class="mode-btn">Volver al menú</button>
     </div>
   </div>
 

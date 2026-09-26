@@ -180,8 +180,9 @@ html, body {
   }
 }
 
-/* Overlay Game Over */
-#game-over {
+/* Overlay genérico: Game Over, selección de modo, salas en línea, cuenta
+   regresiva y resultado final comparten esta misma base visual. */
+.overlay {
   position: fixed;
   inset: 0;
   background: rgba(5, 8, 12, 0.82);
@@ -191,6 +192,7 @@ html, body {
   justify-content: center;
   z-index: 100;
   animation: fadeIn 0.25s ease-out;
+  padding: 16px;
 }
 
 @keyframes fadeIn {
@@ -198,7 +200,7 @@ html, body {
   to { opacity: 1; transform: scale(1); }
 }
 
-#game-over[hidden] {
+.overlay[hidden] {
   display: none;
 }
 
@@ -289,4 +291,122 @@ html, body {
 
 #go-restart:active {
   transform: translateY(1px);
+}
+
+/* Selección de modo / menú en línea / sala de espera */
+.mode-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.mode-btn {
+  padding: 14px 20px;
+  border: 1px solid #2d3b4e;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #1c2633, #161e29);
+  color: #eef2f5;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.1s ease, background 0.1s ease, border-color 0.1s ease;
+}
+
+.mode-btn:hover {
+  border-color: #4ade4a;
+}
+
+.mode-btn:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.mode-btn.small {
+  padding: 14px 18px;
+  flex: 0 0 auto;
+}
+
+.join-row {
+  display: flex;
+  gap: 8px;
+}
+
+#join-code-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 14px 12px;
+  border-radius: 12px;
+  border: 1px solid #2d3b4e;
+  background: #0f151d;
+  color: #eef2f5;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 4px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+#join-code-input:focus {
+  outline: none;
+  border-color: #4ade4a;
+}
+
+.link-btn {
+  margin-top: 8px;
+  background: none;
+  border: none;
+  color: #8b9bb4;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 6px;
+}
+
+.link-btn:hover {
+  color: #eef2f5;
+}
+
+.room-code {
+  font-family: monospace;
+  font-size: 42px;
+  font-weight: 800;
+  letter-spacing: 10px;
+  color: #4ade4a;
+  background: rgba(74, 222, 74, 0.1);
+  border: 1px dashed #4ade4a;
+  border-radius: 12px;
+  padding: 14px 10px;
+  margin: 14px 0;
+}
+
+.waiting-status {
+  color: #8b9bb4;
+  font-size: 14px;
+  margin: 0 0 8px;
+  line-height: 1.4;
+}
+
+/* Cuenta regresiva antes de una carrera en línea */
+#countdown-number {
+  font-size: 96px;
+  font-weight: 900;
+  color: #4ade4a;
+  text-shadow: 0 0 30px rgba(74, 222, 74, 0.6);
+  animation: countPulse 0.9s ease-out;
+}
+
+@keyframes countPulse {
+  from { transform: scale(1.6); opacity: 0.3; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Indicador del rival en el HUD (solo visible en modo en línea). Necesita
+   esta regla explícita porque .hud-group ya trae su propio "display: flex"
+   que si no, le ganaría al atributo hidden por prioridad de cascada. */
+#hud-rival[hidden] {
+  display: none;
+}
+
+#hud-rival .hud-item span {
+  color: #4295c7;
 }
