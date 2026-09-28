@@ -7,6 +7,11 @@ const TURTLE_VISIBLE_SEC = 4.2;
 const TURTLE_SUBMERGE_SEC = 1.3;
 const TURTLE_WARN_SEC = 0.7;
 
+// Mismo margen de "perdón" que en obstacles.js: angosta la caja de choque
+// de la rana para que coincida con lo que realmente se ve dibujado (tanto
+// para pisar troncos/tortugas como para la cabeza peligrosa del cocodrilo).
+const FROG_HITBOX_MARGIN = 0.14;
+
 export class Platform {
   constructor({ xCells, lengthCells, kind, color, headColor }) {
     this.xCells = xCells;
@@ -236,12 +241,12 @@ export class RiverLane {
       for (const offset of offsets) {
         const start = p.xCells + offset;
         const end = start + p.lengthCells;
-        if (col + 1 > start && col < end) {
+        if (col + 1 - FROG_HITBOX_MARGIN > start && col + FROG_HITBOX_MARGIN < end) {
           const dxPerSec = this.direction * this.speed;
           if (this.kind === "croc") {
             const headStart = this.direction > 0 ? end - 1 : start;
             const headEnd = headStart + 1;
-            if (col + 1 > headStart && col < headEnd) {
+            if (col + 1 - FROG_HITBOX_MARGIN > headStart && col + FROG_HITBOX_MARGIN < headEnd) {
               return { safe: false, dxPerSec };
             }
           }

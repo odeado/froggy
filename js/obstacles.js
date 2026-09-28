@@ -1,5 +1,13 @@
 import { COLS } from "./config.js";
 
+// Margen de "perdón" en la colisión: la rana se dibuja ocupando solo ~78%
+// de su celda y los autos también quedan un poco insertos dentro de la
+// suya, así que si la caja de colisión usara la celda completa se sentiría
+// un choque antes de que los dibujos realmente se toquen. Este margen
+// (relativo al ancho de una celda) angosta la zona de choque de la rana
+// para que coincida mejor con lo que se ve en pantalla.
+const FROG_HITBOX_MARGIN = 0.14;
+
 export class Vehicle {
   constructor({ xCells, lengthCells, color }) {
     this.xCells = xCells;
@@ -158,7 +166,7 @@ export class Lane {
       for (const offset of offsets) {
         const start = v.xCells + offset;
         const end = start + v.lengthCells;
-        if (col + 1 > start && col < end) return true;
+        if (col + 1 - FROG_HITBOX_MARGIN > start && col + FROG_HITBOX_MARGIN < end) return true;
       }
     }
     return false;

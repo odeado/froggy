@@ -1,7 +1,10 @@
 import { Transport, generateRoomCode, generatePlayerId } from "./sync.js";
 
 const HEARTBEAT_MS = 2000;
-const DISCONNECT_TIMEOUT_MS = 8000;
+// Más tolerante que antes (era 8000): un celular puede quedarse sin mandar
+// nada por unos segundos por una app en segundo plano o un bache de señal,
+// sin que eso signifique que el rival realmente se fue.
+const DISCONNECT_TIMEOUT_MS = 15000;
 const COUNTDOWN_MS = 3000;
 
 // Controla todas las pantallas de "modo de juego" (un jugador / en línea,
@@ -134,6 +137,27 @@ export function createMultiplayerController({ onSinglePlayer, onMatchStart }) {
 
     onMatchStart({ isHost, roomCode: transport.roomCode, playerId });
   }
+
+  // Cuando el celular se bloquea o el navegador manda la pestaña a segundo
+  // plano, el sistema operativo pausa los temporizadores (setInterval) de
+  // esta página. Al volver, "lastOpponentAt" puede quedar muy atrás sin que
+  // el rival se haya ido realmente — solo porque ESTE celular estuvo
+  // pausado y no pudo procesar los mensajes que sí llegaban. Por eso, al
+  // recuperar el foco: le damos a la rana rival un respiro fresco antes de
+  // que el vigilante evalúe de nuevo, y mandamos de inmediato nuestro
+  // último estado para que el rival tampoco nos dé por desconectados.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible") return;
+    if (!matchStarted || !transport) return;
+    lastOpponentAt = Date.now();
+    if (lastPayload) {
+      try {
+        transport.send({ ...lastPayload, from: playerId, ts: Date.now() });
+      } catch (e) {
+        /* noop */
+      }
+    }
+  });
 
   // --- Botones de menú ---
 
